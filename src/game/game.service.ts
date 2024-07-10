@@ -74,19 +74,12 @@ export class GameService {
     if (!room) throw new Error('Room not found');
 
     // Инициализация доски, если она еще не была установлена
-    let board;
-    if (!room.board || room.board === '[]') {
-      board = JSON.stringify([
-        'X',
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-      ]);
+    let board: Array<'X' | 'O' | null>;
+    if (
+      !room.board ||
+      room.board === '[null,null,null,null,null,null,null,null,null]'
+    ) {
+      board = Array(9).fill(null);
     } else {
       board = JSON.parse(room.board);
     }
@@ -98,9 +91,7 @@ export class GameService {
 
     // Обновление доски
     board[index] = move;
-    room.board = JSON.stringify(board);
-
-    if (room.board === "['X']") {
+    if (JSON.stringify(board) === '["X"]') {
       room.board = JSON.stringify([
         'X',
         null,
@@ -112,6 +103,8 @@ export class GameService {
         null,
         null,
       ]);
+    } else {
+      room.board = JSON.stringify(board);
     }
 
     // Сохранение состояния доски в репозитории
