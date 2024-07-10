@@ -10,7 +10,6 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { GameService } from './game.service';
-import { User } from 'src/user/entities/user.entity';
 
 @WebSocketGateway()
 export class GameGateway
