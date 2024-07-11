@@ -12,7 +12,6 @@ export class UserGateway {
 
   @SubscribeMessage('createUser')
   create(@MessageBody() createUserDto: any) {
-    console.log(createUserDto);
     return this.userService.create(createUserDto);
   }
 

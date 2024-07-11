@@ -122,11 +122,14 @@ export class GameGateway
       data.player,
     );
 
-    this.server.to(String(data.roomId)).emit('moveMade', {
-      index: data.index,
-      player: data.player,
-      socketId: data.socketId,
-    });
+    // this.server.to(String(data.roomId)).emit('moveMade', {
+    //   index: data.index,
+    //   move: data.move,
+    //   isCurrentStepX: result.isCurrentStepX,
+    //   socketId: result.isCurrentStepX
+    //     ? result.room.socketIdX
+    //     : result.room.socketIdO,
+    // });
     this.server.to(String(data.roomId)).emit('gameStateUpdate', {
       boardState: result.board,
       currentStepX: result.isCurrentStepX,
@@ -144,10 +147,11 @@ export class GameGateway
     const room = await this.gameService.restartGame(data.roomId);
 
     // Уведомите всех игроков в комнате о том, что игра перезапущена
-    this.server.to(String(room.id)).emit('gameStateUpdate', {
+    this.server.to(String(data.roomId)).emit('gameStateUpdate', {
       boardState: JSON.parse(room.board),
       currentStepX: true,
       socketId: room.socketIdX,
+      isRestart: true,
     });
   }
 }
