@@ -12,9 +12,9 @@ export class User {
   @Column({ default: 0 })
   rating: number;
 
-  @OneToMany(() => Game, (game) => game.playerX)
+  @OneToMany(() => Game, (game) => game.playerX, { onDelete: 'CASCADE' })
   gamesAsX: Game[];
 
-  @OneToMany(() => Game, (game) => game.playerO)
+  @OneToMany(() => Game, (game) => game.playerO, { onDelete: 'CASCADE' })
   gamesAsO: Game[];
 }
