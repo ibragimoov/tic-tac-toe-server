@@ -157,13 +157,13 @@ export class GameGateway
   @SubscribeMessage('sendEmoji')
   async handleEmojiSent(
     @MessageBody()
-    data: { roomId: number; fromSocketId: string; emoji: string },
+    data: { roomId: number; from: string; emoji: string },
     @ConnectedSocket() client: Socket,
   ) {
     const room = await this.gameService.getRoom(data.roomId);
 
     const toSocketId: string =
-      room.socketIdO === data.fromSocketId ? room.socketIdX : room.socketIdO;
+      room.socketIdO === data.from ? room.socketIdX : room.socketIdO;
 
     this.server.to(String(data.roomId)).emit('handleEmoji', {
       to: toSocketId,
