@@ -24,22 +24,29 @@ export class GameGateway
   }
 
   handleConnection(client: Socket) {
-    // console.log('Client connected:', client.id);
+    console.log('Client connected:', client.id);
   }
 
   handleDisconnect(client: Socket) {
-    // console.log('Client disconnected:', client.id);
+    console.log('Client disconnected:', client.id);
   }
 
   @SubscribeMessage('createRoom')
   async handleCreateRoom(
-    @MessageBody() data: { username: string; role: string; socketId: string },
+    @MessageBody()
+    data: {
+      username: string;
+      role: string;
+      socketId: string;
+      boardSize: number;
+    },
     @ConnectedSocket() client: Socket,
   ) {
     const room = await this.gameService.createRoom(
       data.username,
       data.role,
       data.socketId,
+      data.boardSize,
     );
     client.join(String(room.id));
     this.server.to(client.id).emit('roomCreated', room);
@@ -127,6 +134,7 @@ export class GameGateway
       currentStepX: result.isCurrentStepX,
       socketId:
         data.move === 'X' ? result.room.socketIdO : result.room.socketIdX,
+      boardSize: result.room.boardSize,
     });
   }
 
@@ -135,15 +143,14 @@ export class GameGateway
     @MessageBody() data: { roomId: number },
     @ConnectedSocket() client: Socket,
   ) {
-    // Обновите состояние комнаты в базе данных
     const room = await this.gameService.restartGame(data.roomId);
 
-    // Уведомите всех игроков в комнате о том, что игра перезапущена
     this.server.to(String(data.roomId)).emit('gameStateUpdate', {
       boardState: JSON.parse(room.board),
       currentStepX: true,
       socketId: room.socketIdX,
       isRestart: true,
+      boardSize: room.boardSize,
     });
   }
 }

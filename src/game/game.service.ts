@@ -17,12 +17,14 @@ export class GameService {
     username: string,
     role: string,
     socketId: string,
+    boardSize: number,
   ): Promise<Game> {
     const user = new User();
     user.username = username;
     await this.userRepository.save(user);
 
     const room = new Game();
+    room.boardSize = boardSize;
     if (role === 'X') {
       room.playerX = user;
       room.socketIdX = socketId;
@@ -73,41 +75,20 @@ export class GameService {
 
     if (!room) throw new Error('Room not found');
 
-    // Инициализация доски, если она еще не была установлена
     let board: Array<'X' | 'O' | null>;
-    if (
-      !room.board ||
-      room.board === '[null,null,null,null,null,null,null,null,null]'
-    ) {
-      board = Array(9).fill(null);
+    if (!room.board || room.board === '[]') {
+      board = Array(room.boardSize * room.boardSize).fill(null);
     } else {
       board = JSON.parse(room.board);
     }
 
-    // Проверка, что индекс пустой, иначе возвращаем ошибку
     if (board[index]) {
       throw new Error('Cell already occupied');
     }
 
-    // Обновление доски
     board[index] = move;
-    if (JSON.stringify(board) === '["X"]') {
-      room.board = JSON.stringify([
-        'X',
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-      ]);
-    } else {
-      room.board = JSON.stringify(board);
-    }
+    room.board = JSON.stringify(board);
 
-    // Сохранение состояния доски в репозитории
     await this.roomRepository.save(room);
 
     return {
@@ -124,8 +105,9 @@ export class GameService {
 
     if (!room) throw new Error('Room not found');
 
-    // Сброс состояния игры
-    room.board = JSON.stringify(Array(9).fill(null));
+    room.board = JSON.stringify(
+      Array(room.boardSize * room.boardSize).fill(null),
+    );
 
     await this.roomRepository.save(room);
 

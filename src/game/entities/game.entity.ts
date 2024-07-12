@@ -23,4 +23,7 @@ export class Game {
 
   @Column({ default: '[]' })
   board: string;
+
+  @Column({ type: 'int', default: 3 })
+  boardSize: number;
 }
