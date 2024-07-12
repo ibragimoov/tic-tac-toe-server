@@ -153,4 +153,21 @@ export class GameGateway
       boardSize: room.boardSize,
     });
   }
+
+  @SubscribeMessage('sendEmoji')
+  async handleEmojiSent(
+    @MessageBody()
+    data: { roomId: number; fromSocketId: string; emoji: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const room = await this.gameService.getRoom(data.roomId);
+
+    const toSocketId: string =
+      room.socketIdO === data.fromSocketId ? room.socketIdX : room.socketIdO;
+
+    this.server.to(String(data.roomId)).emit('handleEmoji', {
+      to: toSocketId,
+      message: data.emoji,
+    });
+  }
 }
