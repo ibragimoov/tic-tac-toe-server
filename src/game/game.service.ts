@@ -16,7 +16,6 @@ export class GameService {
   async createRoom(
     username: string,
     role: string,
-    socketId: string,
     boardSize: number,
   ): Promise<Game> {
     const user = new User();
@@ -27,10 +26,8 @@ export class GameService {
     room.boardSize = boardSize;
     if (role === 'X') {
       room.playerX = user;
-      room.socketIdX = socketId;
     } else {
       room.playerO = user;
-      room.socketIdO = socketId;
     }
 
     return await this.roomRepository.save(room);
@@ -43,12 +40,7 @@ export class GameService {
     });
   }
 
-  async joinRoom(
-    roomId: number,
-    username: string,
-    role: string,
-    socketId: string,
-  ): Promise<Game> {
+  async joinRoom(roomId: number, username: string): Promise<Game> {
     const room = await this.getRoom(roomId);
     const user = new User();
     user.username = username;
@@ -56,10 +48,8 @@ export class GameService {
 
     if (room.playerX) {
       room.playerO = user;
-      room.socketIdO = socketId;
     } else {
       room.playerX = user;
-      room.socketIdX = socketId;
     }
 
     return await this.roomRepository.save(room);
@@ -76,6 +66,7 @@ export class GameService {
     if (!room) throw new Error('Room not found');
 
     let board: Array<'X' | 'O' | null>;
+
     if (!room.board || room.board === '[]') {
       board = Array(room.boardSize * room.boardSize).fill(null);
     } else {

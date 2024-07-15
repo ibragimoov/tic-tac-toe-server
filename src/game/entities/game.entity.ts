@@ -12,12 +12,6 @@ export class Game {
   @ManyToOne(() => User, (user) => user.gamesAsO, { onDelete: 'CASCADE' })
   playerO: User;
 
-  @Column({ default: null })
-  socketIdX: string;
-
-  @Column({ default: null })
-  socketIdO: string;
-
   @Column({ default: 'in-progress' })
   status: string;
 

@@ -24,11 +24,11 @@ export class GameGateway
   }
 
   handleConnection(client: Socket) {
-    console.log('Client connected:', client.id);
+    // console.log('Client connected:', client.id);
   }
 
   handleDisconnect(client: Socket) {
-    console.log('Client disconnected:', client.id);
+    // console.log('Client disconnected:', client.id);
   }
 
   @SubscribeMessage('createRoom')
@@ -37,7 +37,6 @@ export class GameGateway
     data: {
       username: string;
       role: string;
-      socketId: string;
       boardSize: number;
     },
     @ConnectedSocket() client: Socket,
@@ -45,11 +44,11 @@ export class GameGateway
     const room = await this.gameService.createRoom(
       data.username,
       data.role,
-      data.socketId,
       data.boardSize,
     );
+
     client.join(String(room.id));
-    this.server.to(client.id).emit('roomCreated', room);
+    client.emit('roomCreated', room);
   }
 
   @SubscribeMessage('getRoom')
@@ -58,8 +57,19 @@ export class GameGateway
     @ConnectedSocket() client: Socket,
   ) {
     const room = await this.gameService.getRoom(data.roomId);
-    if (room) {
-      client.emit('getRoomResponse', { success: true, room });
+
+    const clientsInRoom = await this.server.in(String(room.id)).fetchSockets();
+    const numberOfClients: number = clientsInRoom.length;
+
+    const isPlayersExist = !!(room.playerX || room.playerO);
+    const isHostConnecting: boolean = clientsInRoom[0]?.id === client.id;
+
+    if (numberOfClients === 1 && isPlayersExist && isHostConnecting) {
+      client.emit('getRoomResponse', {
+        success: true,
+        room,
+        myMove: room.playerX ? 'X' : 'O',
+      });
     } else {
       client.emit('getRoomResponse', { success: false });
     }
@@ -68,13 +78,13 @@ export class GameGateway
   @SubscribeMessage('joinRoom')
   async handleJoinRoom(
     @MessageBody()
-    data: { roomId: number; username: string; role: string; socketId: string },
+    data: { roomId: number; username: string; role: string },
     @ConnectedSocket() client: Socket,
   ) {
     const room = await this.gameService.getRoom(data.roomId);
 
     if (!room) {
-      client.emit('joinRoomResponse', {
+      client.emit('roomError', {
         success: false,
         message: 'Room not found',
       });
@@ -82,24 +92,23 @@ export class GameGateway
     }
 
     if (room.playerO && room.playerX) {
-      client.emit('joinRoomResponse', {
+      client.emit('roomError', {
         success: false,
         message: 'Room is full',
       });
-    } else {
-      const updatedRoom = await this.gameService.joinRoom(
-        data.roomId,
-        data.username,
-        data.role,
-        data.socketId,
-      );
-      this.server.to(String(updatedRoom.id)).emit('playerJoined', updatedRoom);
-      client.join(String(updatedRoom.id));
-      client.emit('joinRoomResponse', { success: true, room: updatedRoom });
-      this.server.to(String(data.roomId)).emit('getPlayerFirstMove', {
-        socketId: updatedRoom.socketIdX,
-      });
     }
+
+    const updatedRoom: any = await this.gameService.joinRoom(
+      data.roomId,
+      data.username,
+    );
+
+    client.join(String(room.id));
+    this.server.to(String(room.id)).emit('playerJoined', {
+      success: true,
+      room: updatedRoom,
+      myMove: room.playerO ? 'X' : 'O',
+    });
   }
 
   @SubscribeMessage('startGame')
@@ -117,24 +126,14 @@ export class GameGateway
       roomId: number;
       index: number;
       move: 'X' | 'O';
-      player: string;
-      socketId: string;
+      isCurrentStepX: boolean;
     },
     @ConnectedSocket() client: Socket,
   ) {
-    const result = await this.gameService.makeMove(
-      data.roomId,
-      data.index,
-      data.move,
-      data.player,
-    );
-
-    this.server.to(String(data.roomId)).emit('gameStateUpdate', {
-      boardState: result.board,
-      currentStepX: result.isCurrentStepX,
-      socketId:
-        data.move === 'X' ? result.room.socketIdO : result.room.socketIdX,
-      boardSize: result.room.boardSize,
+    client.broadcast.to(String(data.roomId)).emit('gameStateUpdate', {
+      indexSquare: data.index,
+      currentStepX: !data.isCurrentStepX,
+      move: data.move,
     });
   }
 
@@ -143,15 +142,7 @@ export class GameGateway
     @MessageBody() data: { roomId: number },
     @ConnectedSocket() client: Socket,
   ) {
-    const room = await this.gameService.restartGame(data.roomId);
-
-    this.server.to(String(data.roomId)).emit('gameStateUpdate', {
-      boardState: JSON.parse(room.board),
-      currentStepX: true,
-      socketId: room.socketIdX,
-      isRestart: true,
-      boardSize: room.boardSize,
-    });
+    client.broadcast.to(String(data.roomId)).emit('restartGame');
   }
 
   @SubscribeMessage('sendEmoji')
@@ -160,13 +151,7 @@ export class GameGateway
     data: { roomId: number; from: string; emoji: string },
     @ConnectedSocket() client: Socket,
   ) {
-    const room = await this.gameService.getRoom(data.roomId);
-
-    const toSocketId: string =
-      room.socketIdO === data.from ? room.socketIdX : room.socketIdO;
-
-    this.server.to(String(data.roomId)).emit('handleEmoji', {
-      to: toSocketId,
+    client.broadcast.to(String(data.roomId)).emit('handleEmoji', {
       message: data.emoji,
     });
   }
