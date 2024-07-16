@@ -19,7 +19,7 @@ export class GameGateway
 
   constructor(private gameService: GameService) {}
 
-  afterInit(server: Server) {
+  afterInit() {
     console.log('Initialized');
   }
 
@@ -49,7 +49,6 @@ export class GameGateway
 
     client.join(String(room.id));
     client.emit('roomCreated', room);
-    console.log(client.rooms);
   }
 
   @SubscribeMessage('getRoom')
@@ -112,14 +111,6 @@ export class GameGateway
     });
   }
 
-  @SubscribeMessage('startGame')
-  handleStartGame(
-    @MessageBody() data: { roomId: number },
-    @ConnectedSocket() client: Socket,
-  ) {
-    this.server.to(data.roomId.toString()).emit('gameStarted');
-  }
-
   @SubscribeMessage('makeMove')
   async handleMakeMove(
     @MessageBody()
@@ -131,7 +122,6 @@ export class GameGateway
     },
     @ConnectedSocket() client: Socket,
   ) {
-    console.log(client.rooms);
     client.broadcast.to(String(data.roomId)).emit('gameStateUpdate', {
       indexSquare: data.index,
       currentStepX: !data.isCurrentStepX,
