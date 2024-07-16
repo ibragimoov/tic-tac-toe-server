@@ -55,12 +55,7 @@ export class GameService {
     return await this.roomRepository.save(room);
   }
 
-  async makeMove(
-    roomId: number,
-    index: number,
-    move: 'X' | 'O',
-    player: string,
-  ): Promise<any> {
+  async makeMove(roomId: number, index: number, move: 'X' | 'O'): Promise<any> {
     const room = await this.getRoom(roomId);
 
     if (!room) throw new Error('Room not found');
@@ -80,15 +75,7 @@ export class GameService {
     board[index] = move;
     room.board = JSON.stringify(board);
 
-    await this.roomRepository.save(room);
-
-    return {
-      board,
-      move,
-      player,
-      room,
-      isCurrentStepX: move === 'X' ? false : true,
-    };
+    return await this.roomRepository.save(room);
   }
 
   async restartGame(roomId: number): Promise<any> {

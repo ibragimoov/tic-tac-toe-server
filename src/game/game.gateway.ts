@@ -24,11 +24,11 @@ export class GameGateway
   }
 
   handleConnection(client: Socket) {
-    // console.log('Client connected:', client.id);
+    console.log('Client connected:', client.id);
   }
 
-  handleDisconnect(client: Socket) {
-    // console.log('Client disconnected:', client.id);
+  async handleDisconnect(client: Socket) {
+    console.log('Client disconnected:', client.rooms);
   }
 
   @SubscribeMessage('createRoom')
@@ -49,6 +49,7 @@ export class GameGateway
 
     client.join(String(room.id));
     client.emit('roomCreated', room);
+    console.log(client.rooms);
   }
 
   @SubscribeMessage('getRoom')
@@ -130,11 +131,13 @@ export class GameGateway
     },
     @ConnectedSocket() client: Socket,
   ) {
+    console.log(client.rooms);
     client.broadcast.to(String(data.roomId)).emit('gameStateUpdate', {
       indexSquare: data.index,
       currentStepX: !data.isCurrentStepX,
       move: data.move,
     });
+    await this.gameService.makeMove(data.roomId, data.index, data.move);
   }
 
   @SubscribeMessage('restartGame')

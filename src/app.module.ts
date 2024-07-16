@@ -6,16 +6,18 @@ import { GameModule } from './game/game.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Game } from './game/entities/game.entity';
 import { User } from './user/entities/user.entity';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
       type: 'mysql',
-      host: 'sql7.freemysqlhosting.net',
-      port: 3306,
-      username: 'sql7718942',
-      password: 'BnV7MwhQcw',
-      database: 'sql7718942',
+      host: process.env.DB_HOST,
+      port: +process.env.DB_PORT,
+      username: process.env.DB_USERNAME,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
       entities: [Game, User],
       synchronize: true,
     }),
